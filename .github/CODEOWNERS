@@ -1,0 +1,25 @@
+# Engine, balance rules, tests, tooling, docs and deployment are owned by the repo owner:
+# any PR that touches them needs owner review (and the `engine` label to pass the scope check).
+# Character folders (characters/<id>/) belong to their creators; the template and the
+# owner's roster characters are listed so edits to them are reviewed too.
+/shared/                  @NoahWolk1
+/server/                  @NoahWolk1
+/client/                  @NoahWolk1
+/scripts/                 @NoahWolk1
+/test/                    @NoahWolk1
+/docs/                    @NoahWolk1
+/.github/                 @NoahWolk1
+/CLAUDE.md                @NoahWolk1
+/README.md                @NoahWolk1
+/render.yaml              @NoahWolk1
+/package.json             @NoahWolk1
+/package-lock.json        @NoahWolk1
+/.gitignore               @NoahWolk1
+/characters/_template/    @NoahWolk1
+/characters/ember/        @NoahWolk1
+/characters/bastion/      @NoahWolk1
+/characters/volt/         @NoahWolk1
+/characters/mirelle/      @NoahWolk1
+/characters/nimbus/       @NoahWolk1
+/characters/gertie/       @NoahWolk1
+/characters/gloop/        @NoahWolk1

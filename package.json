@@ -1,0 +1,52 @@
+{
+  "name": "character-battle",
+  "version": "1.0.0",
+  "description": "A Smash-style 2D platform fighter where every friend builds their own character.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "validate": "node scripts/validate.js",
+    "new-character": "node scripts/new-character.js",
+    "migrate": "node scripts/migrate.js",
+    "lint": "node scripts/lint-characters.js",
+    "assets": "node scripts/check-assets.js",
+    "audit": "node scripts/audit.js",
+    "fuzz": "node scripts/fuzz.js",
+    "fuzz:quick": "node scripts/fuzz.js --quick",
+    "balance-report": "node scripts/validate.js --report",
+    "golden": "node scripts/golden-test.js",
+    "calibrate": "node test/governor/calibration.test.js --seeds 3 --seconds 120 --strict",
+    "smoke": "node scripts/sim-smoke-test.js",
+    "art-check": "node scripts/art-check.js",
+    "contact-sheet": "node scripts/contact-sheet.js",
+    "test:char": "node test/char/all.test.js",
+    "test:validate": "node test/validate/all.test.js",
+    "test:governor": "node test/governor/run-all.js",
+    "test:sim": "node --test test/sim/*.test.js test/actions/*.test.js test/entities/*.test.js test/movement/*.test.js test/status/*.test.js test/script/*.test.js",
+    "test:client": "node --test test/art/*.test.js test/fx/*.test.js test/lab/*.test.js",
+    "test:server": "node --test test/server/*.test.js",
+    "test:integration": "node --test test/integration/*.test.js",
+    "test:tooling": "node --test test/tooling/*.test.js",
+    "test:ai": "node --test test/ai/*.test.js",
+    "test:cheaters": "node test/cheaters/run.js",
+    "test:archetypes": "node test/archetypes/run.js --quick",
+    "test:archetypes:full": "node test/archetypes/run.js",
+    "docs": "node scripts/gen-docs.js",
+    "docs:check": "node scripts/gen-docs.js --check",
+    "test": "npm run lint && npm run assets && npm run docs:check && npm run validate && npm run golden && npm run test:char && npm run test:validate && npm run test:governor && npm run test:sim && npm run test:ai && npm run test:client && npm run test:integration && npm run test:server && npm run test:tooling && npm run test:cheaters && npm run test:archetypes && npm run smoke && npm run fuzz:quick"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "socket.io": "^4.8.0"
+  },
+  "devDependencies": {
+    "acorn": "^8.19.0",
+    "acorn-walk": "^8.3.5",
+    "socket.io-client": "^4.8.4"
+  }
+}

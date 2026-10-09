@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="icon" href="data:," />
+  <title>Art Lab — Character Battle</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --bg: #120a1c; --panel: rgba(255,255,255,0.05); --line: #ffffff22; --ink: #fff6ec; --dim: #b9a8cf; --accent: #6ff3ff; --warn: #ffc850; --bad: #ff5a72; --ok: #5be39a; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: radial-gradient(ellipse at top, #3a2350, var(--bg) 70%) fixed; color: var(--ink); font-family: 'Rajdhani', sans-serif; min-height: 100vh; }
+    header { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; padding: 10px 18px; background: rgba(10,4,18,0.75); backdrop-filter: blur(6px); position: sticky; top: 0; z-index: 5; border-bottom: 1px solid var(--line); }
+    h1 { font-family: 'Bungee'; font-weight: 400; margin: 0 6px 0 0; font-size: 22px; }
+    select, button, input[type=number], input[type=text] { font: 600 15px 'Rajdhani'; padding: 4px 10px; border-radius: 8px; border: 1px solid #ffffff33; background: #ffffff14; color: #fff; }
+    select option, select optgroup { background: #22162f; }
+    button { cursor: pointer; } button:hover { background: #ffffff26; }
+    label { font-weight: 600; font-size: 14px; display: inline-flex; gap: 4px; align-items: center; color: var(--dim); }
+    a { color: var(--accent); }
+    #perf { font: 600 13px ui-monospace, Menlo, monospace; color: var(--dim); min-width: 220px; }
+    #perf.slow { color: var(--warn); } #perf.low { color: var(--bad); }
+    #badge { font-weight: 700; padding: 2px 10px; border-radius: 99px; font-size: 13px; background: #ffffff1a; }
+    #badge.ok { background: rgba(91,227,154,0.18); color: var(--ok); } #badge.warn { background: rgba(255,200,80,0.18); color: var(--warn); }
+    .spacer { flex: 1; }
+    #layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; padding: 14px 18px 40px; }
+    section { margin-bottom: 18px; }
+    h2 { font-family: 'Bungee'; font-weight: 400; font-size: 15px; letter-spacing: .06em; margin: 0 0 8px; color: #e8d9ff; display: flex; gap: 10px; align-items: baseline; }
+    h2 small { font-family: 'Rajdhani'; font-size: 13px; color: var(--dim); letter-spacing: 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+    .cell { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; cursor: pointer; transition: border-color .15s; }
+    .cell:hover { border-color: #ffffff55; } .cell.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .cell.err { border-color: var(--bad); }
+    .cell canvas { width: 100%; aspect-ratio: 1 / 1; display: block; }
+    .cell .cap { padding: 4px 8px; font-weight: 700; letter-spacing: .04em; font-size: 13px; display: flex; justify-content: space-between; gap: 6px; }
+    .cell .cap span { opacity: .6; font-weight: 600; text-transform: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #focus { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+    #focus-canvas { width: 100%; aspect-ratio: 16 / 10; display: block; border-radius: 10px; background: #0c0714; }
+    #scrub { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+    #scrub-row { display: flex; gap: 8px; align-items: center; }
+    #scrub input[type=range] { flex: 1; }
+    #phase-bar { width: 100%; height: 44px; display: block; border-radius: 6px; background: #0c0714; }
+    #focus-info { font-size: 14px; line-height: 1.35; color: var(--dim); overflow: auto; max-height: 520px; }
+    #focus-info b { color: var(--ink); } #focus-info .k { color: var(--accent); }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-bottom: 14px; }
+    .panel h3 { margin: 0 0 8px; font-size: 15px; letter-spacing: .05em; text-transform: uppercase; color: #e8d9ff; display: flex; justify-content: space-between; align-items: center; }
+    .row { display: grid; grid-template-columns: 110px 1fr 46px; gap: 6px; align-items: center; font-size: 14px; margin: 3px 0; }
+    .row output { font: 600 12px ui-monospace, Menlo, monospace; text-align: right; color: var(--dim); }
+    .chips { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 14px; }
+    #checks li { margin: 4px 0; font-size: 14px; line-height: 1.3; }
+    #checks li.hitbox-coverage::marker, #checks li.hurtbox-fit::marker { color: var(--warn); }
+    #checks li.error { color: var(--bad); }
+    #checks ul { padding-left: 18px; margin: 6px 0; }
+    #notes { white-space: pre-wrap; font-size: 13px; color: var(--dim); max-height: 200px; overflow: auto; }
+    #sandbox-canvas { width: 100%; aspect-ratio: 16 / 10; display: block; border-radius: 8px; background: #0c0714; }
+    #govlog { font: 12px ui-monospace, Menlo, monospace; max-height: 220px; overflow: auto; margin-top: 6px; background: #0004; border-radius: 8px; padding: 6px; }
+    #govlog div.gov { color: var(--warn); } #govlog div.hit { color: #ffd9e0; } #govlog div.move { color: var(--accent); } #govlog div.err { color: var(--bad); }
+    .btns { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; } .btns button { font-size: 13px; padding: 2px 8px; }
+    #sheet-out img { width: 100%; border-radius: 8px; margin-top: 6px; }
+    .portraits { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+    .portraits canvas { border-radius: 50%; background: #2a1f3d; border: 2px solid #ffffff33; }
+    .showcase-row { display: flex; gap: 12px; } #showcase { width: 260px; height: 300px; border-radius: 12px; } #showcase-half { width: 130px; height: 150px; border-radius: 10px; align-self: flex-end; }
+    body.still .live-only { display: none; }
+    details summary { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <script>
+    // Still mode: hold the window load event (a dev-route image) until lab.js has rendered,
+    // so a plain `chrome --headless --screenshot` captures the finished page.
+    if (/[?&]still=(1|true)(&|$)/.test(location.search)) {
+      window.__labHold = Math.random().toString(36).slice(2, 12);
+      document.write('<img src="/dev/hold/' + window.__labHold + '" alt="" style="position:absolute;width:1px;height:1px;opacity:0">');
+    }
+  </script>
+  <header>
+    <h1>Art Lab</h1>
+    <select id="char" title="character"></select>
+    <label>form <select id="form"></select></label>
+    <label>palette <select id="palette"></select></label>
+    <label>speed <select id="speed"><option value="1">1×</option><option value="0.5">½×</option><option value="0.25">¼×</option><option value="0">pause</option></select></label>
+    <label title="shape-accurate hurtboxes (yellow) and hitboxes (red active, dashed inactive)"><input type="checkbox" id="boxes" /> boxes</label>
+    <label title="solid silhouette on light ground (readability)"><input type="checkbox" id="sil" /> silhouette</label>
+    <label title="in-game size at a zoomed-out camera"><input type="checkbox" id="half" /> 0.5×</label>
+    <label title="stage backdrop behind tiles"><input type="checkbox" id="stagebg" /> stage</label>
+    <span id="perf" title="per-draw ms (art body draw, averaged)">draw — ms</span>
+    <span class="spacer"></span>
+    <span id="badge">checks…</span>
+    <button id="run-checks">Run checks</button>
+    <button id="sheet-btn" title="PNG grid → .cache/contact-sheets/&lt;id&gt;.png">Contact sheet</button>
+    <a href="/">← game</a>
+  </header>
+  <div id="layout">
+    <main>
+      <section>
+        <div id="focus">
+          <div>
+            <canvas id="focus-canvas"></canvas>
+            <div id="scrub">
+              <canvas id="phase-bar"></canvas>
+              <div id="scrub-row">
+                <button id="play" title="play / pause (space)">⏯</button>
+                <button id="step-back" title="previous frame (,)">◀</button>
+                <input type="range" id="frame" min="0" max="60" value="0" />
+                <button id="step-fwd" title="next frame (.)">▶</button>
+                <button id="strike" title="jump to the active midpoint">strike</button>
+                <output id="frame-out">0</output>
+              </div>
+            </div>
+          </div>
+          <div id="focus-info"></div>
+        </div>
+      </section>
+      <section><h2>States <small>click any tile to scrub it</small></h2><div class="grid" id="states"></div></section>
+      <section><h2>Moves <small>every pool move: triggers, cancel-only, throws, taunt</small></h2><div class="grid" id="moves"></div></section>
+      <section><h2>Entities <small>each animated on its own</small></h2><div class="grid" id="entities"></div></section>
+      <section class="live-only"><h2>Showcase <small>character-select preview: every trigger's resolved move, cycling forms</small></h2><div class="showcase-row"><canvas id="showcase"></canvas><canvas id="showcase-half"></canvas></div></section>
+      <section><h2>Portraits <small>every palette</small></h2><div class="portraits" id="portraits"></div></section>
+    </main>
+    <aside>
+      <div class="panel" id="checks"><h3>Automatic checks <small id="checks-time"></small></h3><div id="checks-body">running…</div></div>
+      <div class="panel"><h3>Body</h3><div id="body-ctl"></div></div>
+      <div class="panel"><h3>Resources &amp; vars</h3><div id="res-ctl"></div></div>
+      <div class="panel"><h3>Statuses</h3><div class="chips" id="status-ctl"></div></div>
+      <div class="panel live-only">
+        <details id="sandbox-box">
+          <summary><b>GOVERNOR SANDBOX</b> — real sim vs a dummy, gov log</summary>
+          <canvas id="sandbox-canvas"></canvas>
+          <div class="row"><span>dummy %</span><input type="range" id="dummy-pct" min="0" max="200" value="60" /><output id="dummy-pct-out">60</output></div>
+          <div><small>moves</small><div class="btns" id="sb-moves"></div></div>
+          <div><small>spawn</small><div class="btns" id="sb-spawns"></div></div>
+          <div class="btns"><button id="sb-reset">reset</button><button id="sb-clear">clear log</button></div>
+          <div id="govlog"></div>
+        </details>
+      </div>
+      <div class="panel"><h3>Contact sheet</h3><div id="sheet-out"><small>Builds a PNG grid (states, every move at its strike frame, forms, entities, portrait) and saves it to <code>.cache/contact-sheets/&lt;id&gt;.png</code>.</small></div></div>
+      <div class="panel"><h3>Validator notes</h3><div id="notes"></div></div>
+    </aside>
+  </div>
+  <script type="module" src="/lab.js"></script>
+</body>
+</html>

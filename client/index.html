@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="icon" href="data:," />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Character Battle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="ui">
+    <!-- TITLE -->
+    <section id="title" class="screen">
+      <div class="logo">
+        <div class="logo-top">CHARACTER</div>
+        <div class="logo-bottom">BATTLE</div>
+        <div class="logo-sub">every fighter forged by a friend</div>
+      </div>
+      <nav class="menu">
+        <button data-go="online" class="big primary">Play Online</button>
+        <button data-go="local" class="big">Local Battle</button>
+        <button data-go="training" class="big">Training</button>
+        <div class="menu-row">
+          <button data-go="controls">Controls</button>
+          <button data-go="create">Make a Fighter</button>
+        </div>
+      </nav>
+      <div class="footer" id="roster-count"></div>
+    </section>
+
+    <!-- CHARACTER SELECT (local / training) -->
+    <section id="select" class="screen">
+      <header class="bar">
+        <button class="back" data-go="title">← Back</button>
+        <h1 id="select-title">Choose Your Fighters</h1>
+        <div class="bar-right">
+          <label class="stocks-label" id="stocks-wrap">Stocks
+            <select id="stocks"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select>
+          </label>
+          <button id="start-local" class="primary">Fight!</button>
+        </div>
+      </header>
+      <div class="char-grid" id="local-grid"></div>
+      <div class="slots" id="slots"></div>
+    </section>
+
+    <!-- ONLINE ENTRY -->
+    <section id="online" class="screen">
+      <header class="bar"><button class="back" data-go="title">← Back</button><h1>Play Online</h1><div class="bar-right"></div></header>
+      <div class="panel online-panel">
+        <label>Your name <input id="player-name" maxlength="14" placeholder="Player" /></label>
+        <button id="create-room" class="big primary">Create Room</button>
+        <div class="or">or join a friend</div>
+        <div class="join-row">
+          <input id="room-code" maxlength="4" placeholder="CODE" />
+          <button id="join-room" class="big">Join</button>
+        </div>
+        <div class="error" id="online-error"></div>
+      </div>
+    </section>
+
+    <!-- LOBBY -->
+    <section id="lobby" class="screen">
+      <header class="bar">
+        <button class="back" id="leave-room">← Leave</button>
+        <h1>Room <span id="lobby-code" class="code"></span></h1>
+        <div class="bar-right">
+          <span class="host-only">
+            <label class="stocks-label">Stocks <select id="lobby-stocks"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></label>
+            <select id="bot-level"><option value="easy">CPU Easy</option><option value="normal" selected>CPU Normal</option><option value="hard">CPU Hard</option></select>
+            <button id="add-bot">+ CPU</button>
+            <button id="start-online" class="primary">Start Match</button>
+          </span>
+          <span class="guest-only waiting">Waiting for host…</span>
+        </div>
+      </header>
+      <div class="char-grid" id="online-grid"></div>
+      <div class="slots" id="lobby-slots"></div>
+      <div class="error center" id="lobby-error"></div>
+    </section>
+
+    <!-- RESULTS -->
+    <section id="results" class="screen">
+      <div class="results-wrap">
+        <div class="winner-stage"><canvas id="winner-canvas" width="520" height="520"></canvas></div>
+        <div class="results-side">
+          <div class="winner-label">WINNER</div>
+          <div class="winner-name" id="winner-name"></div>
+          <table id="results-table"></table>
+          <div class="results-buttons">
+            <button id="results-rematch" class="big primary">Rematch</button>
+            <button id="results-select" class="big">Fighters</button>
+          </div>
+          <button id="results-continue" class="big">Continue</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTROLS -->
+    <section id="controls" class="screen">
+      <header class="bar"><button class="back" data-go="title">← Back</button><h1>Controls</h1><div class="bar-right"></div></header>
+      <div class="panel prose" id="controls-body"></div>
+    </section>
+
+    <!-- CREATE -->
+    <section id="create" class="screen">
+      <header class="bar"><button class="back" data-go="title">← Back</button><h1>Make a Fighter</h1><div class="bar-right"></div></header>
+      <div class="panel prose">
+        <ol class="steps">
+          <li><b>Clone the repo</b> and run <code>npm install</code>.</li>
+          <li>Run <code>npm run new-character -- your-name</code>. This creates <code>characters/your-name/character.js</code>.</li>
+          <li>Open Claude Code in the repo and describe your fighter: their look, personality, moves, specials. Claude reads <code>CLAUDE.md</code> and the guides in <code>docs/</code>.</li>
+          <li>Run <code>npm run dev</code> and open <code>http://localhost:3000/?train=your-name</code> to try them in Training (press <b>H</b> to see hitboxes).</li>
+          <li>Run <code>npm run validate</code>. Anything too strong gets scaled automatically — the report shows what changed.</li>
+          <li>Open a pull request. Once merged, Render redeploys and everyone can play your fighter online.</li>
+        </ol>
+        <p class="note">Go wild. Big numbers are fine — the auto-balancer keeps every fighter fair, so nobody can one-shot or become unkillable.</p>
+      </div>
+    </section>
+
+    <!-- PAUSE -->
+    <div id="pause" class="overlay hidden">
+      <div class="panel pause-panel">
+        <h2>Paused</h2>
+        <button id="resume" class="big primary">Resume</button>
+        <button id="quit" class="big">Quit Match</button>
+        <p class="hint" id="pause-hint"></p>
+      </div>
+    </div>
+
+    <div id="training-help" class="hidden">TRAINING · H hitboxes · R reset · Y slow-mo · T taunt · Esc menu</div>
+    <div id="toast" class="hidden"></div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/main.js"></script>
+</body>
+</html>
