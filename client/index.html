@@ -28,6 +28,7 @@
         <div class="menu-row">
           <button data-go="controls">Controls</button>
           <button data-go="create">Make a Fighter</button>
+          <button onclick="location.href='/lab.html'">Art Lab</button>
         </div>
       </nav>
       <div class="footer" id="roster-count"></div>
@@ -115,7 +116,7 @@
           <li><b>Clone the repo</b> and run <code>npm install</code>.</li>
           <li>Run <code>npm run new-character -- your-name</code>. This creates <code>characters/your-name/character.js</code>.</li>
           <li>Open Claude Code in the repo and describe your fighter: their look, personality, moves, specials. Claude reads <code>CLAUDE.md</code> and the guides in <code>docs/</code>.</li>
-          <li>Run <code>npm run dev</code> and open <code>http://localhost:3000/?train=your-name</code> to try them in Training (press <b>H</b> to see hitboxes).</li>
+          <li>Run <code>npm run dev</code> and open <code>http://localhost:3000/?train=your-name</code> to try them in Training (press <b>H</b> to see hitboxes), and <code>/lab.html?char=your-name</code> for the <a href="/lab.html" style="color:var(--cool)">Art Lab</a> — every pose and move, hitbox overlays, forms and art checks.</li>
           <li>Run <code>npm run validate</code>. Anything too strong gets scaled automatically — the report shows what changed.</li>
           <li>Open a pull request. Once merged, Render redeploys and everyone can play your fighter online.</li>
         </ol>
