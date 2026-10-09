@@ -1,0 +1,17 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# Dashboard → New → Blueprint → pick this repo. Every push to main redeploys.
+services:
+  - type: web
+    name: character-battle
+    runtime: node
+    plan: free            # sleeps after ~15 min idle; first request wakes it (cold start)
+    branch: main
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION  # matches CI; package.json requires >=20
+        value: "20"

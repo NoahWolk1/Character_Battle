@@ -1,0 +1,102 @@
+name: Validate
+
+# Required checks (enable in Settings → Branches → main → "Require status checks"):
+#   "test"  — npm test (lint, assets, validate, golden, unit/integration/server suites, smoke, quick fuzz)
+#   "scope" — a character PR may only touch characters/<one-id>/ (label the PR `engine` otherwise)
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # Full suite, including the worker_threads room/catalog tests and the local-port server tests.
+      - run: npm test
+      - name: Character report → step summary
+        if: always()
+        run: |
+          node --input-type=module <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import { listCharacterFolders, loadCharacter } from './server/characters.js';
+          import { formatReport } from './shared/balance/v2/report.js';
+          import { lintAll, markdown as lintMd } from './scripts/lint-characters.js';
+          import { checkAll, markdown as assetsMd } from './scripts/check-assets.js';
+          const out = ['## Character report', ''];
+          out.push(lintMd(lintAll()), assetsMd(checkAll()), '### Validate (auto-balance)', '');
+          out.push('| character | result | W-notes (auto-balanced) |', '|---|---|---:|');
+          const blocks = [];
+          for (const folder of listCharacterFolders()) {
+            const r = await loadCharacter(folder);
+            const errors = (r.errors || []).map((e) => (typeof e === 'string' ? { code: 'E004', path: '', why: e, text: e } : e));
+            const warn = (r.notes || []).filter((n) => /^W/.test(n.code || '')).length;
+            out.push(`| ${folder} | ${r.ok ? '✔ loads' : `✘ ${errors.length} error(s)`} | ${warn} |`);
+            let lines;
+            try { lines = formatReport({ ...r, errors }, { explain: false }); } catch (e) { lines = [`(formatReport failed: ${e.message})`]; }
+            blocks.push(`<details><summary>${folder}</summary>\n\n\`\`\`\n${lines.join('\n').replace(/\x1b\[[0-9;]*m/g, '')}\n\`\`\`\n</details>`);
+          }
+          out.push('', ...blocks, '');
+          console.log(out.join('\n'));
+          EOF
+
+  scope:
+    name: scope
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Character PRs touch only characters/<one-id>/
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          ENGINE: ${{ contains(github.event.pull_request.labels.*.name, 'engine') }}
+        run: |
+          changed=$(git diff --name-only "$BASE_SHA"..."$HEAD_SHA")
+          echo "Changed files:"; echo "$changed" | sed 's/^/  /'
+          # characters/_template/ and other _folders are engine files, not a character folder.
+          outside=$(echo "$changed" | grep -v '^characters/[^_/][^/]*/' | grep -v '^$' || true)
+          folders=$(echo "$changed" | grep '^characters/[^_/][^/]*/' | cut -d/ -f2 | sort -u || true)
+          nfolders=$(echo "$folders" | grep -c . || true)
+          problems=0
+          if [ -n "$outside" ]; then
+            problems=1
+            while IFS= read -r f; do
+              echo "::warning file=$f,title=Outside characters/<id>/::$f is outside characters/<id>/. Character PRs may only touch their own folder; engine/tooling changes need the 'engine' label and owner review."
+            done <<< "$outside"
+          fi
+          if [ "$nfolders" -gt 1 ]; then
+            problems=1
+            echo "::warning title=Multiple characters changed::This PR touches $nfolders character folders: $(echo $folders | tr '\n' ' '). A character PR may change only one."
+          fi
+          {
+            echo "## PR scope"
+            if [ "$problems" = 0 ]; then echo "✔ Only characters/$(echo $folders)/ changed."; fi
+            if [ -n "$outside" ]; then echo "Files outside characters/<id>/:"; echo "$outside" | sed 's/^/- `/; s/$/`/'; fi
+            if [ "$nfolders" -gt 1 ]; then echo "Character folders: $(echo $folders | tr '\n' ' ')"; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$problems" = 1 ]; then
+            if [ "$ENGINE" = "true" ]; then
+              echo "PR is labeled 'engine': scope check passes (owner review via CODEOWNERS)." | tee -a "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::error title=PR scope::A character PR may only touch characters/<one-id>/. Split the PR, or ask the owner to add the 'engine' label."
+              exit 1
+            fi
+          fi

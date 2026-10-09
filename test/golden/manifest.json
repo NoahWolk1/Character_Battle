@@ -1,0 +1,165 @@
+{
+ "version": 1,
+ "roster": [
+  "ember",
+  "bastion",
+  "volt",
+  "mirelle",
+  "template"
+ ],
+ "frames": 3600,
+ "checkEvery": 60,
+ "stocks": 3,
+ "seeds": [
+  {
+   "seed": 1,
+   "cpu": [
+    "hard",
+    "hard"
+   ]
+  },
+  {
+   "seed": 2,
+   "cpu": [
+    "normal",
+    "hard"
+   ]
+  }
+ ],
+ "stage": "sky-sanctum",
+ "characters": {
+  "ember": {
+   "source": "c6b1e47b1cb2b5d61ddaad40d41dc4ed49e6bd97",
+   "normalized": "6ef936e85e9a9bec20590cf524e0a58801a1c433"
+  },
+  "bastion": {
+   "source": "2da4cd236b483a68773325115c618ab53086f3a8",
+   "normalized": "22d95f8f33ceaa02bd0b3d924257d9aa6f2b3406"
+  },
+  "volt": {
+   "source": "3e4cb1347102af94ce1c0f1a73bbe13442801e37",
+   "normalized": "70c731fe84aa4a77b3abb49a7c1080e904b567d6"
+  },
+  "mirelle": {
+   "source": "e1265dbd9506f0e1730b75b3a044f47cd7f99bab",
+   "normalized": "780513e89a1d8c2d2a8148e8b0db0e7a03ef29fd"
+  },
+  "template": {
+   "source": "6a0f38d8dd43ea8662a269dcbf76eb49e2f74a75",
+   "normalized": "93d47e732f311d0f2b288222846d762f81eb1d76"
+  }
+ },
+ "eventKeys": {
+  "bounce": [
+   "type",
+   "id",
+   "x",
+   "y"
+  ],
+  "clank": [
+   "type",
+   "x",
+   "y"
+  ],
+  "countdown": [
+   "type",
+   "n"
+  ],
+  "dodge": [
+   "type",
+   "id",
+   "x",
+   "y"
+  ],
+  "doublejump": [
+   "type",
+   "id",
+   "x",
+   "y"
+  ],
+  "fizzle": [
+   "type",
+   "x",
+   "y",
+   "effect",
+   "color"
+  ],
+  "go": [
+   "type"
+  ],
+  "hit": [
+   "type",
+   "attacker",
+   "target",
+   "x",
+   "y",
+   "damage",
+   "kb",
+   "effect",
+   "angle",
+   "dir",
+   "percent",
+   "strong"
+  ],
+  "jump": [
+   "type",
+   "id",
+   "x",
+   "y"
+  ],
+  "ko": [
+   "type",
+   "id",
+   "by",
+   "side",
+   "x",
+   "y",
+   "stocks"
+  ],
+  "land": [
+   "type",
+   "id",
+   "x",
+   "y",
+   "heavy"
+  ],
+  "ledge": [
+   "type",
+   "id",
+   "x",
+   "y"
+  ],
+  "move": [
+   "type",
+   "id",
+   "slot",
+   "effect"
+  ],
+  "projectile": [
+   "type",
+   "id",
+   "x",
+   "y",
+   "effect"
+  ],
+  "respawn": [
+   "type",
+   "id",
+   "x",
+   "y"
+  ],
+  "shieldhit": [
+   "type",
+   "id",
+   "x",
+   "y",
+   "damage"
+  ],
+  "step": [
+   "type",
+   "id",
+   "x",
+   "y"
+  ]
+ }
+}
