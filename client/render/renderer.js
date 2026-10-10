@@ -15,6 +15,10 @@ import { ArtHost, DEFAULT_LIGHT, shapesAABB } from './art-host.js';
 import { PLAYER_COLORS } from '../characters.js';
 
 const TRAIL_LIFE = 7;
+// Adaptive resolution (watchFrameRate): average frame interval over `window` frames; above
+// slowMs the backing resolution steps down by `step` (never below `floor` × CSS px); after
+// recoverWindows smooth windows below smoothMs it steps back up.
+const RES = Object.freeze({ window: 90, slowMs: 21, smoothMs: 17.5, step: 0.8, floor: 0.75, recoverWindows: 8, capSdMs: 1.5 });
 
 export class Renderer {
   constructor(canvas, stage, characters) {
@@ -74,12 +78,32 @@ export class Renderer {
   }
 
   resize() {
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = Math.max(RES.floor, Math.min(2, window.devicePixelRatio || 1) * (this.resScale ?? 1));
+    const oldW = this.cam.w;
     this.dpr = dpr;
     this.canvas.width = Math.floor(window.innerWidth * dpr);
     this.canvas.height = Math.floor(window.innerHeight * dpr);
     this.cam.w = this.canvas.width;
     this.cam.h = this.canvas.height;
+    if (oldW > 1 && this.cam.zoom) this.cam.zoom *= this.cam.w / oldW; // same framing at the new resolution (cam.w starts at 1)
+  }
+
+  /**
+   * Adaptive resolution: the canvas fill/raster cost grows with pixel count, so a slow machine
+   * (sustained < ~48 fps) renders at a lower backing resolution; it steps back up after a long
+   * run of smooth frames. `ms` = this frame's interval.
+   */
+  watchFrameRate(ms) {
+    const p = this.fps ||= { sum: 0, sq: 0, n: 0, good: 0 };
+    if (!(ms > 0) || ms > 100) return; // tab switch / pause: not a measurement
+    p.sum += ms; p.sq += ms * ms; p.n++;
+    if (p.n < RES.window) return;
+    const avg = p.sum / p.n, sd = Math.sqrt(Math.max(0, p.sq / p.n - avg * avg));
+    p.sum = 0; p.sq = 0; p.n = 0;
+    const scale = this.resScale ?? 1;
+    // A rock-steady slow rate is a display/battery cap (e.g. 30 Hz low-power mode), not load.
+    if (avg > RES.slowMs && sd > RES.capSdMs && this.dpr > RES.floor) { this.resScale = scale * RES.step; p.good = 0; this.resize(); }
+    else if (avg < RES.smoothMs && scale < 1 && ++p.good >= RES.recoverWindows) { this.resScale = Math.min(1, scale / RES.step); p.good = 0; this.resize(); }
   }
 
   info(id) { return this.roster.find((r) => r.id === id); }
@@ -176,6 +200,7 @@ export class Renderer {
     this.time++;
     const now = performance.now();
     const dt = this.lastNow == null ? 1 / 60 : Math.min(0.1, Math.max(0, (now - this.lastNow) / 1000));
+    if (this.lastNow != null) this.watchFrameRate(now - this.lastNow);
     this.lastNow = now;
     this.clock += dt;
     if (!opts.paused) this.effects.update();

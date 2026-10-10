@@ -5,6 +5,9 @@ import { MATCH, TICK_RATE } from '../shared/constants.js';
 import { pollSource, encodeInput, blankInput, PadEdges } from './input.js';
 
 const STEP_MS = 1000 / TICK_RATE;
+// Online interpolation delay (frames behind the newest snapshot): measured jitter + margin,
+// clamped. With 60 Hz snapshots a clean connection settles near 2 frames (~33 ms).
+export const INTERP = Object.freeze({ min: 1.5, max: 8, margin: 1.2, start: 4 });
 export const PROTOCOL = 2; // must equal server/rooms.js PROTOCOL
 
 /**
@@ -131,6 +134,8 @@ export class OnlineMatch {
     roster = this.info.roster || roster;
     this.snaps = [];
     this.offset = null; // local time - server frame time
+    this.jitter = STEP_MS; // ms a snapshot typically arrives later than the fastest one (peak-tracked)
+    this.delay = INTERP.start; // interpolation delay in frames, eased toward the jitter target
     this.lastMask = -1;
     this.sentAt = 0;
     renderer.setRoster(roster);
@@ -138,12 +143,18 @@ export class OnlineMatch {
     this.onSnap = ({ s, e }) => {
       const now = performance.now();
       const o = now - s.frame * STEP_MS;
-      // Track the smallest observed offset (= least-delayed packet), drift slowly upward.
-      this.offset = this.offset === null ? o : Math.min(o, this.offset + 0.5);
+      // Track the smallest observed offset (= least-delayed packet), drifting slowly upward
+      // (~15 ms/s at 60 snapshots/s) so clock drift and route changes are followed.
+      this.offset = this.offset === null ? o : Math.min(o, this.offset + 0.25);
+      // How late this packet was compared to the fastest: rises at once, decays slowly.
+      const late = o - this.offset;
+      this.jitter = late > this.jitter ? late : this.jitter * 0.995 + late * 0.005;
       this.snaps.push(s);
       if (this.snaps.length > 40) this.snaps.shift();
       this.renderer.handleEvents(e, this.audio);
     };
+    // Send input the moment a key changes instead of waiting for the next animation frame.
+    this.keyInput = (e) => { if (!e.repeat) this.sendInput(); };
     this.onMatchEnd = (data) => { this.stop(); this.onEnd?.(data); };
     this.onAborted = (data) => {
       this.stop();
@@ -165,10 +176,12 @@ export class OnlineMatch {
     this.net.socket.on('match:end', this.onMatchEnd);
     this.net.socket.on('match:aborted', this.onAborted);
     window.addEventListener('keydown', this.keyHandler);
+    window.addEventListener('keydown', this.keyInput);
+    window.addEventListener('keyup', this.keyInput);
     const loop = () => {
       if (!this.running) return;
       if (this.pad.pressed(9)) this.toggleMenu(); // gamepad Start
-      this.sendInput();
+      this.sendInput(); // gamepads can only be polled; keyboard changes were already sent
       const view = this.interpolated();
       if (view) this.renderer.render(view, {});
       requestAnimationFrame(loop);
@@ -180,17 +193,27 @@ export class OnlineMatch {
     const input = this.menuOpen ? blankInput() : pollSource(this.source);
     const mask = encodeInput(input);
     const now = performance.now();
-    if (mask !== this.lastMask || now - this.sentAt > 100) {
-      this.net.socket.volatile.emit('input', mask);
-      this.lastMask = mask;
-      this.sentAt = now;
-    }
+    if (mask !== this.lastMask) {
+      // A change must arrive (a dropped release would hold the button until the next resend).
+      this.net.socket.emit('input', mask);
+    } else if (now - this.sentAt > 100) {
+      this.net.socket.volatile.emit('input', mask); // keep-alive resend; fine to drop
+    } else return;
+    this.lastMask = mask;
+    this.sentAt = now;
+  }
+
+  /** Interpolation delay target in frames: just enough buffer to cover the measured jitter. */
+  delayTarget() {
+    return Math.min(INTERP.max, Math.max(INTERP.min, this.jitter / STEP_MS + INTERP.margin));
   }
 
   interpolated() {
     const snaps = this.snaps;
     if (!snaps.length) return null;
-    const renderFrame = (performance.now() - this.offset) / STEP_MS - 5; // ~83 ms buffer
+    // Ease the delay (≤ 3% per frame) so playback speeds up/slows down imperceptibly.
+    this.delay += (this.delayTarget() - this.delay) * 0.03;
+    const renderFrame = (performance.now() - this.offset) / STEP_MS - this.delay;
     let a = null, b = null;
     for (let i = snaps.length - 1; i >= 0; i--) {
       if (snaps[i].frame <= renderFrame) { a = snaps[i]; b = snaps[i + 1] || null; break; }
@@ -228,5 +251,7 @@ export class OnlineMatch {
     this.net.socket.off('match:end', this.onMatchEnd);
     this.net.socket.off('match:aborted', this.onAborted);
     window.removeEventListener('keydown', this.keyHandler);
+    window.removeEventListener('keydown', this.keyInput);
+    window.removeEventListener('keyup', this.keyInput);
   }
 }

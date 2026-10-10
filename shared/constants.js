@@ -5,7 +5,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const TICK_RATE = 60;
-export const SNAPSHOT_EVERY = 2; // server sends a snapshot every N ticks (30 Hz)
+export const SNAPSHOT_EVERY = 1; // server sends a snapshot every N ticks (60 Hz: less buffering online)
 
 export const MATCH = {
   stocks: 3,
